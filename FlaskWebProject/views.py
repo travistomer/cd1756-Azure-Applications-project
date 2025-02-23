@@ -84,15 +84,15 @@ def authorized():
     if request.args.get('state') != session.get("state"):
         return redirect(url_for("home"))  # No-OP. Goes back to Index page
     if "error" in request.args:  # Authentication/Authorization failure
-        app.logger.warning('/redirect - Login Failed');
+        app.logger.warning('/redirect - Login Failed')
         return render_template("auth_error.html", result=request.args)
     if request.args.get('code'):
         cache = _load_cache()
         # TODO: Acquire a token from a built msal app, along with the appropriate redirect URI
-        result = _build_msal_app(cache = cache).acquire_token_by_authorization_code(
-            request.args['code'], 
-            scopes = Config.SCOPE, 
-            redirect_uri = url_for('authorized', _external = True, _scheme = 'https')
+        result = _build_msal_app(cache=cache).acquire_token_by_authorization_code(
+            request.args['code'],
+            scopes=Config.SCOPE,
+            redirect_uri=url_for('authorized', _external=True, _scheme='https')
         )
         if "error" in result:
             app.logger.warning('/redirect - Login Failed for MSAL')
@@ -109,14 +109,15 @@ def authorized():
 @app.route('/logout')
 def logout():
     logout_user()
-    if session.get("user"): # Used MS Login
+    if session.get("user"):  # Used MS Login
         app.logger.warning('/logout - Logout succeeded for MSAL')
         # Wipe out user and its token cache from session
         session.clear()
         # Also logout from your tenant's web session
         return redirect(
             Config.AUTHORITY + "/oauth2/v2.0/logout" +
-            "?post_logout_redirect_uri=" + url_for("login", _external=True))
+            "?post_logout_redirect_uri=" + url_for("login", _external=True)
+        )
     app.logger.warning('/logout - Logout succeeded')
     return redirect(url_for('login'))
 
@@ -135,14 +136,16 @@ def _save_cache(cache):
 def _build_msal_app(cache=None, authority=None):
     # TODO: Return a ConfidentialClientApplication
     return msal.ConfidentialClientApplication(
-        Config.CLIENT_ID, authority = authority or Config.AUTHORITY,
-        client_credential = Config.CLIENT_SECRET, token_cache = cache
+        Config.CLIENT_ID,
+        authority=authority or Config.AUTHORITY,
+        client_credential=Config.CLIENT_SECRET,
+        token_cache=cache
     )
 
 def _build_auth_url(authority=None, scopes=None, state=None):
     # TODO: Return the full Auth Request URL with appropriate Redirect URI
-    return _build_msal_app(authority = authority).get_authorization_request_url(
+    return _build_msal_app(authority=authority).get_authorization_request_url(
         scopes or [],
-        state = state or str(uuid.uuid4()),
-        redirect_uri = url_for('authorized', _external = True, _scheme = 'https')
+        state=state or str(uuid.uuid4()),
+        redirect_uri=url_for('authorized', _external=True, _scheme='https')
     )
